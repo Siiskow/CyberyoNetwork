@@ -72,7 +72,7 @@ AXES_LOCK_OUT_AT_FAILURE = True
 AXES_COOLOFF_TIME = 0.02
 AXES_VERBOSE = True  # Display verbose error messages during lockout
 AXES_LOCKOUT_MESSAGE = 'Account locked due to multiple failed login attempts.'
-#AXES_LOCKOUT_TEMPLATE = 'lockout.html'
+AXES_LOCKOUT_TEMPLATE = 'lockout.html'
 AXES_ENABLE_LOGGER = True  # Enable logging of login attempts and lockouts
 AXES_LOGGER = 'axes.watch_login'
 
