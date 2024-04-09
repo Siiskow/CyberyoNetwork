@@ -1,7 +1,7 @@
 ﻿# CyberyoNetwork
-Welcome to the Cyberyo Network\
+Welcome to the Cyberyo Network
 
-In this readme, i will show you the steps to start and run our project.\
+In this readme, i will show you the steps to start and run our project.
 
 1- Python should be installed on your machine\
 2- After succesfully installing python (or if it is installed already) open a terminal\
