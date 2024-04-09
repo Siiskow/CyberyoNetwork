@@ -13,5 +13,5 @@ In this readme, i will show you the steps to start and run our project.
 8- Install all the dependencies of the project by the following command : pip install -r requirements.txt\
 9- After succesfully installing the dependencies, your project is ready to run\
 10- Run the command : "py manage.py runserver_plus --cert-file cert.pem --key-file cert-key.pem"\
-11- The server should be running, you can open the app through your browser at the address : https://127.0.0.1:8000/\
+11- The server should be running, you can open the app through your browser at the address : https://127.0.0.1:8000/
 
