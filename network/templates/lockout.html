@@ -1,1 +1,67 @@
-<h1>lahouma 7arir falasstin</h1>
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oops! Trop de tentatives incorrectes</title>
+    <script>
+    function miseAJourTemps() {
+        var compteur = 80; 
+      
+        
+        var intervalID = setInterval(function() {
+          compteur--;
+          document.getElementById('compteur').textContent = compteur;
+      
+          if (compteur <= 0) {
+            clearInterval(intervalID); 
+            
+            setTimeout(function() {
+              window.location.href = 'login'; 
+            }, 1000);
+          }
+        }, 1000); 
+      }
+      
+  
+      window.onload = function() {
+        miseAJourTemps();
+      };
+      </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px auto;
+            background-color: #f9fffd;
+        }
+        h1 {
+            color: red;
+            position: absolute;
+            top:60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        div{
+            
+            position: absolute;
+            top:70%;
+            left: 50%;
+            transform: translate(-50%, -70%);
+        }
+        img{
+            width: 20%;
+        }
+        i{
+            width: 20%;
+            
+        }
+    </style>
+</head>
+<body>
+    <i><img src="{% static 'network/images/lock.png' %}"></i>
+    <h1>Oops! Trop de tentatives incorrectes.</h1>
+    <div id="temps-restant">Temps restant : <span id="compteur">60</span> secondes</div>
+</body>
+</html>
