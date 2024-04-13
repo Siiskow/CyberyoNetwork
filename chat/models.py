@@ -28,3 +28,11 @@ class Message(models.Model):
     def __str__(self):
         return f'Sender : {self.created_by}, Message : {self.body}'
     
+class KeyPair(models.Model):
+    room = models.OneToOneField(Room, on_delete=models.CASCADE)
+    public_key = models.TextField()  # Field to store the public key (in PEM format)
+    private_key = models.TextField()  # Field to store the private key (in PEM format)
+
+    def __str__(self):
+        return f"Keys for {self.room.room_id}"
+        

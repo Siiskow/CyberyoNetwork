@@ -20,6 +20,9 @@ from django.contrib import messages as msg
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
+from django.contrib.auth.backends import ModelBackend  
+
+
 
 def index(request):
     
@@ -137,7 +140,6 @@ def logout_view(request):
     return HttpResponseRedirect(reverse("index"))
 
 
-
 import math
 def register(request):
     form=captchatestForm()
@@ -190,7 +192,7 @@ def register(request):
                 'form':form,
                 "message": "Username already taken."
             })
-        login(request, user)
+        login(request, user,backend='django.contrib.auth.backends.ModelBackend')
         return HttpResponseRedirect(reverse("index"))
     else:
         return render(request, "network/register.html",{'form':form})

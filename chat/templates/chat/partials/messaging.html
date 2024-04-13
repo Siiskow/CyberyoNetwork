@@ -34,7 +34,7 @@
     {% for message in room_messages %}
       <!-- Sender Message-->
       {% if message.created_by == request.user %}
-      <div id="{{message.id}}" class="media w-50 ml-auto mb-3 justify-content-end" data-is-me="me">
+      <div style="display: none" id="{{message.id}}" class="media w-50 ml-auto mb-3 justify-content-end encrypted-div" data-is-me="me">
         <div class="media-body">
             <div class="d-flex justify-content-end">
                 <div style="display:flex;justify-content: center; align-items: center;" class="dropleft mr-2">
@@ -44,19 +44,19 @@
                     </div>
                 </div>
                 <div style="max-width: 17em; overflow-wrap: break-word;" class="bg-success rounded py-2 px-3">
-                    <p class="text-small mb-0 text-white ">{{message.body}}</p>
+                    <p class="text-small mb-0 text-white encrypted-message">{{message.body}}</p>
                 </div>
             </div>
           <p  style="text-align: right; font-size:70%" data-created-at="{{message.created_at}}" class="small text-muted time_of_messages ml-4 mt-1 ">{{message.created_at|timesince}} ago</p>
         </div>
       </div>
       {% else %}
-      <div id="{{message.id}}" class="media w-50 mb-3 align-items-center" data-is-me="{{message.created_by.last_name}}"><img src="/media/{{message.created_by.profile_pic}}" alt="user" width="50" class="rounded-circle">
+      <div style="display: none" id="{{message.id}}" class="media w-50 mb-3 align-items-center encrypted-div" data-is-me="{{message.created_by.last_name}}"><img src="/media/{{message.created_by.profile_pic}}" alt="user" width="50" class="rounded-circle">
         <div class="media-body ml-3">
             <p style="font-size:78%" class="text-muted mb-0">{{message.created_by.first_name}} {{message.created_by.last_name}} </p>
             <div class="d-flex">
                 <div class="bg-light rounded py-2 px-3 " style="max-width: 17em; overflow-wrap: break-word;" >
-                    <p class="text-small mb-0 text-muted">{{message.body}}</p>
+                    <p class="text-small mb-0 text-muted encrypted-message">{{message.body}}</p>
                 </div>
             </div>
           <p style="font-size:70%" data-created-at="{{message.created_at}}" class="small text-muted time_of_messages mt-1 mb-0">{{message.created_at|timesince}} ago</p>
@@ -159,6 +159,8 @@
 <script>
     let chatSocket = null;
     const chatRoom = document.querySelector("#room_id").textContent.replaceAll('"','');
+    let public_key = ''
+    let private_key = ''
     console.log(chatRoom);
     const messagesDiv = document.querySelector("#messagesDiv");
     //this is to autoscroll down : 
@@ -168,6 +170,7 @@
     const submitMessage = document.querySelector("#submitMessage");
     chatSocket = new WebSocket(`ws://${window.location.host}/ws/${chatRoom}/`);
     selectedUsers = []
+
 
     function showInputImage(){
         inputImage = document.getElementById("inputGroupeImage");
@@ -234,6 +237,7 @@
 
     chatSocket.onopen = function(e) {
         console.log('on open');
+        chatSocket.send(JSON.stringify({ type: 'get_keys' }));
     }
 
     chatSocket.onclose = function(e) {
@@ -284,6 +288,7 @@
         if (toEmptyDiv!=null)
             toEmptyDiv.remove();
         if (data.type == "chat_message"){
+            textToShow = await importPrivateKeyAndDecrypt(data.message,private_key);
             if (data.current_user == currentUser.username) {
                 messagesDiv.innerHTML += 
                     `<div id="${data.message_id}" class="media w-50 ml-auto mb-3 justify-content-end" data-is-me="me">
@@ -296,14 +301,14 @@
                                     </div>
                                 </div>
                                 <div style="max-width: 17em; overflow-wrap: break-word;" class="bg-success rounded py-2 px-3">
-                                    <p class="text-small mb-0 text-white ">${data.message}</p>
+                                    <p class="text-small mb-0 text-white ">${textToShow}</p>
                                 </div>
                             </div>
                             <p style="text-align: right; font-size:70%" data-created-at="${data.created_at_no_timesince}" class="small text-muted time_of_messages ml-4 mt-1">${data.created_at} ago</p>
                         </div>
                     </div>`;
               
-              MessageDiv.children[0].children[1].children[1].innerText = `You : ${data.message}`;
+              MessageDiv.children[0].children[1].children[1].innerText = `You : ${textToShow}`;
               MessageDiv.children[0].children[1].children[0].children[1].setAttribute('data-created-at',`${data.created_at_no_timesince}`);
               MessageDiv.children[0].children[1].children[0].children[1].innerText = `${data.created_at} ago`;
 
@@ -317,13 +322,13 @@
                         <p style="font-size:78%" class="text-muted mb-0">${data.first_name} ${data.last_name} </p>
                         <div class="d-flex">
                             <div style="max-width: 17em; overflow-wrap: break-word;" class="bg-light rounded py-2 px-3">
-                                <p class="text-small mb-0 text-muted">${data.message}</p>
+                                <p class="text-small mb-0 text-muted">${textToShow}</p>
                             </div>
                         </div>
                   <p style="font-size:70%" data-created-at="${data.created_at_no_timesince}" class="small text-muted time_of_messages mt-1">${data.created_at} ago</p>
                 </div>
               </div>`;
-              MessageDiv.children[0].children[1].children[1].innerText = `${data.last_name} : ${data.message}`; //--------------->
+              MessageDiv.children[0].children[1].children[1].innerText = `${data.last_name} : ${textToShow}`; //--------------->
               MessageDiv.children[0].children[1].children[0].children[1].setAttribute('data-created-at',`${data.created_at_no_timesince}`);
               MessageDiv.children[0].children[1].children[0].children[1].innerText = `${data.created_at} ago`;
             }
@@ -367,6 +372,25 @@
                     elementToDelete.remove();
                 }
         }
+        if (data.type== "send_keys"){
+            public_key = data.public_key.replace(/\r?\n|\r/g, "");
+            private_key = data.private_key.replace(/\r?\n|\r/g, "");
+
+            let encryptedMessages = document.querySelectorAll('.encrypted-message');
+            let encryptedDiv = document.querySelectorAll('.encrypted-div');
+            encryptedMessages.forEach(async function (element) {
+                let encryptedText = element.textContent.trim();
+                console.log("Message Before Decryption : ",encryptedText);
+                console.log("Private key is : ",private_key)
+                let decryptedText = await importPrivateKeyAndDecrypt(encryptedText,private_key);
+                console.log("Message After Decryption : ",decryptedText);
+                element.textContent = decryptedText;
+            });
+           
+            encryptedDiv.forEach(async function (element) {
+                element.style.display = "flex";
+            });
+        }
         resizeText();
     }
     
@@ -390,10 +414,11 @@
         }
     }
 
-    function sendMessage() {
+    async function sendMessage() {
+        textToSend = await importPublicKeyAndEncrypt(chatToSend.value,public_key);
         chatSocket.send(JSON.stringify({
             'type': 'message',
-            'message': chatToSend.value,
+            'message': textToSend,
         }))
         chatToSend.value = ''
     }
@@ -406,9 +431,9 @@
     }
 
 
-    submitMessage.onclick = function(e) {
+    submitMessage.onclick = async function(e) {
         e.preventDefault();
-        sendMessage();
+        await sendMessage();
     }
 
     function joinChatRoom(id) {
@@ -558,6 +583,109 @@
             updateTimeForMessages('.time_of_messages');
             updateTimeForMessages('.time_of_messages_group');
             }, 60 * 1000);
+
+    //-----------------------------------------RSA-------------------------------------------------------------
+    function str2ab(str) {
+        const buf = new ArrayBuffer(str.length);
+        const bufView = new Uint8Array(buf);
+        for (let i = 0, strLen = str.length; i < strLen; i++) {
+            bufView[i] = str.charCodeAt(i);
+        }
+        return buf;
+    }
+        
+    function ab2str(buf) {
+        return String.fromCharCode.apply(null, new Uint8Array(buf));
+    }
+
+    //Encryption : 
+    function getSpkiDer(spkiPem){
+        const pemHeader = "-----BEGIN PUBLIC KEY-----";
+        const pemFooter = "-----END PUBLIC KEY-----";
+        var pemContents = spkiPem.substring(pemHeader.length, spkiPem.length - pemFooter.length);
+        var binaryDerString = window.atob(pemContents);
+        return str2ab(binaryDerString); 
+    }
+    async function encryptRSA(key, plaintext) {
+        let encrypted = await window.crypto.subtle.encrypt(
+            {
+                name: "RSA-OAEP"
+            },
+            key,
+            plaintext
+        );
+        return encrypted;
+    }
+    async function importPublicKey(spkiPem) {       
+        return await window.crypto.subtle.importKey(
+            "spki",
+            getSpkiDer(spkiPem),
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256",
+            },
+            true,
+            ["encrypt"]
+        );
+    }
+    async function importPublicKeyAndEncrypt(plaintext,publicKey) {       
+        try {
+            const pub = await importPublicKey(publicKey);
+            const encrypted = await encryptRSA(pub, new TextEncoder().encode(plaintext));
+            const encryptedBase64 = window.btoa(ab2str(encrypted));
+            Cipheredtext = encryptedBase64.replace(/(.{64})/g, "$1\n")
+            return Cipheredtext;
+        } catch(error) {
+            console.log(error);
+            return null;
+        }
+    }
+    
+    //Decryption : 
+    async function importPrivateKeyAndDecrypt(ciphertext,privateKey) {
+        // A ciphertext produced with the first code   
+        try {
+            const priv = await importPrivateKey(privateKey);
+            const decrypted = await decryptRSA(priv, str2ab(window.atob(ciphertext)));
+            return decrypted;
+        } catch(error) {
+            console.log(error);
+            return null;
+        }
+    }
+    
+    async function importPrivateKey(pkcs8Pem) {     
+        return await window.crypto.subtle.importKey(
+            "pkcs8",
+            getPkcs8Der(pkcs8Pem),
+            {
+                name: "RSA-OAEP",
+                hash: "SHA-256",
+            },
+            true,
+            ["decrypt"]
+        );
+    }
+    
+    async function decryptRSA(key, ciphertext) {
+        let decrypted = await window.crypto.subtle.decrypt(
+            {
+                name: "RSA-OAEP"
+            },
+            key,
+            ciphertext
+        );
+        return new TextDecoder().decode(decrypted);
+    }
+    
+    function getPkcs8Der(pkcs8Pem){
+        const pemHeader = "-----BEGIN PRIVATE KEY-----";
+        const pemFooter = "-----END PRIVATE KEY-----";
+        var pemContents = pkcs8Pem.substring(pemHeader.length, pkcs8Pem.length - pemFooter.length);
+        var binaryDerString = window.atob(pemContents);
+        return str2ab(binaryDerString); 
+    }
+
 
 </script>
 {% endblock %}

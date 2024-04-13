@@ -98,9 +98,9 @@
                                 {%if room_info.last_message_body is None %}
                                  * Send your first message * 
                                 {%elif room_info.last_message_created_by == request.user %}
-                                  You : {{ room_info.last_message_body }}
+                                  You :- Encrypted Message -
                                 {% else %}
-                                {{room_info.last_message_created_by}} : {{ room_info.last_message_body }}
+                                {{room_info.last_message_created_by}} : - Encrypted Message -
                                 {%endif%}</p>
                             </div>
                         </div>
@@ -114,9 +114,9 @@
                             {%if room_info.last_message_body is None %}
                              * Send your first message * 
                             {%elif room_info.last_message_created_by == request.user %}
-                              You : {{ room_info.last_message_body }}
+                              You : - Encrypted Message -
                             {% else %}
-                            {{ room_info.last_message_body }}
+                            - Encrypted Message -
                             {%endif%}</p>
                       </div>
                     </div>
@@ -209,6 +209,7 @@
     //Variables
     
     let chatName = "";
+    const chatRoom = document.querySelector("#room_id").textContent.replaceAll('"','');
     let chatSocket = null;
     let chatWindowUrl = window.location.href;
     let chatRoom_ID = "";
@@ -219,7 +220,7 @@
     const messagesDiv = document.querySelector("#messagesDiv");
 
 
-    
+    chatSocket = new WebSocket(`ws://${window.location.host}/ws/${chatRoom}/`);
 
     //Functions 
     const SearchUser = document.querySelector('#SearchUser');
@@ -342,6 +343,7 @@
     }
 
     function sendMessage() {
+        console.log(chat_message_input.value);
         chatSocket.send(JSON.stringify({
             'type': 'message',
             'message': chat_message_input.value,

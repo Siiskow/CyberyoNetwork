@@ -6,7 +6,33 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 
-from .models import Room,User,Message
+from .models import Room,User,Message,KeyPair
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.hazmat.primitives import serialization 
+from cryptography.hazmat.backends import default_backend
+
+def generate_rsa_keypair():
+    # Generate RSA key pair
+    private_key = rsa.generate_private_key(
+        public_exponent=65537,
+        key_size=2048,
+        backend=default_backend()
+    )
+
+    # Serialize public key to PEM format
+    public_key_pem = private_key.public_key().public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
+    # Serialize private key to PEM format
+    private_key_pem = private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    )
+
+    return public_key_pem, private_key_pem
 
 @login_required
 @require_POST
@@ -39,6 +65,9 @@ def create_room(request, room_id):
             new_room = Room.objects.create(room_id=room_id,url=url,isGroupChat=True)
         for myusers in userList:
             new_room.participants.add(myusers)
+        public_key_user, private_key_user = generate_rsa_keypair()
+        keypair = KeyPair.objects.create(room=new_room,public_key = public_key_user.decode(), private_key = private_key_user.decode())
+        keypair.save()
         room_id_to_render = new_room.room_id
         return JsonResponse({
             'message':'room created',

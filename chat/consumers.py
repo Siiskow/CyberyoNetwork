@@ -4,8 +4,8 @@ from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 from django.utils.timesince import timesince
 from datetime import datetime
+from .models import Message,Room,KeyPair
 
-from .models import Message,Room
 
 class ChatConsumer(AsyncWebsocketConsumer): 
     async def connect(self):
@@ -33,6 +33,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         print(self.room.isGroupChat)
         if type == 'message':
             message = text_data_json['message']
+            print(message)
             # Send message to group / room
             new_message = await self.create_message(message,user,self.room)
             users_in_room_excluding_me = await self.get_second_user(user)
@@ -48,7 +49,9 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'created_at_no_timesince':new_message.created_at.isoformat(),
                     'created_at': timesince(new_message.created_at),
                 }
+            
             )
+            print("got here")
         if type == 'delete_message':
             message_id = text_data_json['message_id']
             result_deleting = await self.remove_message(message_id,self.room)
@@ -61,6 +64,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'room':self.room.room_id
                 }
             )
+        if type == 'get_keys':
+            public_key, private_key = await self.get_keys()
+            await self.send(text_data=json.dumps({
+                'type': 'send_keys',
+                'public_key': public_key,
+                'private_key' : private_key,
+            }))
+
 
     async def deleted_Message(self,event):
         await self.send(text_data=json.dumps({
@@ -84,10 +95,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'first_name' :event['first_name'],
             'last_name' : event['last_name'],
         }))
+        print("got here 2")
 
     @sync_to_async
     def get_room(self):
         self.room = Room.objects.get(room_id=self.room_name)
+
+    @sync_to_async
+    def get_keys(self):
+        room = Room.objects.get(room_id = self.room)
+        public_key = KeyPair.objects.get(room=room).public_key
+        private_key = KeyPair.objects.get(room=room).private_key
+        return public_key,private_key
+        
     
     @sync_to_async
     def create_message(self, message, created_by, room):
